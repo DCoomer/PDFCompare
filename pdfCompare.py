@@ -58,11 +58,6 @@ def compare_pdf(pdf1, pdf2):
 
 
 if __name__ == '__main__':
-    # path1 = 'PDFFiles\\AP Payment RegisterF.pdf'
-    # path2 = 'PDFFiles\\AP Payment RegisterB.pdf'
-    # path3 = 'PDFFiles\\StatementTitle1A.pdf'
-    # path4 = 'PDFFiles\\exposure.pdf'
-    #compare_pdf(path1, path2)
     Snapshots = 'PDFFiles\\SnapShots'
     Regression ='PDFFiles\\Regression'
     SnapShotFiles = os.listdir(Snapshots)
