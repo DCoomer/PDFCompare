@@ -4,6 +4,7 @@ import os, sys
 #todo
 #  List reports that exist in one folder but not the other
 #  Improve reporting to make it more readable
+#  General speed improvements
 
 def get_pages(path):
     # returns total pdf page number
