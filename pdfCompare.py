@@ -1,17 +1,22 @@
 from PyPDF2 import PdfFileReader
 import re
 import os, sys
+import time
 #todo
 #  List reports that exist in one folder but not the other
 #  Improve reporting to make it more readable
-#  General speed improvements
+#  Improve variable names for easier reading
+#  Display differences on failures
 
 def get_pages(path):
     # returns total pdf page number
-    pdf = PdfFileReader(path)
-    pages = pdf.getNumPages()
-    return pages
-
+    try:
+        pdf = PdfFileReader(path)
+        pages = pdf.getNumPages()
+    except Exception as ex:
+        print(ex)
+    else:
+        return pages
 
 def get_text(path, page):
    # return text from pdf page
@@ -26,46 +31,61 @@ def remove_date(pdf_text):
     pdf_text_date_removed = re.sub(regex,substr,pdf_text)
     return(pdf_text_date_removed)
 
+def report_failures(file_name1, file2_name,page):
+    f = open("Failed_Files-%s.txt"%(time.strftime("%m%d%y")), "at")
+    f.write("FAIL\n%s page %d and %s page %d are different\n\n%s Page %d\n\n%s Page %d\n\n\n"% (file_name1, page,file2_name,page,file_name1,page,file2_name,page))
+    f.close
 
-def report_failures(file_name1,file1_text, file2_name, file2_text, page):
-    f = open("Failed_Files.Txt", "a")
-    f.write("%s page %d and %s page %d are different\n_______________________________\n%s Page %d Text:\n%s\n_______________________________\n%s Page %d Text:\n%s \n"% (file_name1, page, file2_name,page,file_name1,page,file1_text,file2_name,page,file2_text))
+def report_successes(snapshot_name,snapshot_page_num, regress_name, regress_page_num):
+    f = open("Passed_Files-%s.txt"%(time.strftime("%m%d%y")), "at")
+    f.write("PASS\n%s Total Pages:%d\n%s Total Pages:%d\n\n"% (snapshot_name,snapshot_page_num,regress_name,regress_page_num))
     f.close
 
 def compare_pdf(pdf1, pdf2):
-    #prints page number
+    #Gets page number
     pdf1_total_pages = get_pages(pdf1)
     pdf2_total_pages = get_pages(pdf2)
-
+    if pdf1_total_pages is None:
+        pdf1_total_pages = 0
+    if pdf2_total_pages is None:
+        pdf2_total_pages = 0
+        
     if pdf1_total_pages != pdf2_total_pages:
         print("The PDFs have an unequal amount of pages.\nPDF1 Page Count = %d. PDF2 Page Count = %d."% (pdf1_total_pages, pdf2_total_pages))
-
-        report_failures(SnapFile,"%s Total Page Count %d"%(SnapFile,pdf1_total_pages),RegFile,"%s Total Page Count: %d"%(RegFile,pdf2_total_pages),pdf1_total_pages)
+        report_failures(SnapFile+ " %s Total Page Count %d"%(SnapFile,pdf1_total_pages),RegFile + " %s Total Page Count: %d"%(RegFile,pdf2_total_pages),pdf1_total_pages)
     else:
-         #prints page text
+         #Gets page text
         for page in range(pdf1_total_pages):
             pdf1Text = remove_date(get_text(pdf1,page))
             pdf2Text = remove_date(get_text(pdf2,page))
 
             if pdf1Text == pdf2Text:
                 print("%s page %d and %s page %d are the same"% (SnapFile,page,RegFile,page))
-                #write to a successFile
+                report_successes(SnapFile, pdf1_total_pages,RegFile,pdf2_total_pages)
             else:
                 print("%s page %d and %s page %d are different"% (SnapFile,page,RegFile,page))
                 print("\n")
                 print('PDF1 Page %d Text:\n%s \nPDF2 Page %d Text:\n%s \n'% (page, pdf1Text, page, pdf2Text))
-                report_failures(SnapFile, pdf1Text, RegFile, pdf2Text, page)
-   
+                report_failures(SnapFile, RegFile, page)
 
-
-if __name__ == '__main__':
-    Snapshots = 'PDFFiles\\SnapShots'
-    Regression ='PDFFiles\\Regression'
+def get_files_in_directories(Snapshots, Regression):
     SnapShotFiles = os.listdir(Snapshots)
     RegressionFiles = os.listdir(Regression)
-    for SnapFile in SnapShotFiles:
-        for RegFile in RegressionFiles:
+    return SnapShotFiles,RegressionFiles
+
+if __name__ == '__main__':
+    # path1 = 'PDFFiles\\AP Payment RegisterF.pdf'
+    # path2 = 'PDFFiles\\AP Payment RegisterB.pdf'
+    # path3 = 'PDFFiles\\StatementTitle1A.pdf'
+    # path4 = 'PDFFiles\\exposure.pdf'
+    #compare_pdf(path1, path2)
+    Snapshots = 'PDFFiles\\SnapShots'
+    Regression ='PDFFiles\\Regression'
+    pdfs_to_compare = get_files_in_directories(Snapshots, Regression)
+
+    for SnapFile in pdfs_to_compare[0]:
+        for RegFile in pdfs_to_compare[1]:
             if SnapFile == RegFile:
                 SnapFile = Snapshots+"\\"+SnapFile
                 RegFile = Regression+"\\"+RegFile
-                compare_pdf(SnapFile,RegFile)
+                compare_pdf(SnapFile,RegFile) 
